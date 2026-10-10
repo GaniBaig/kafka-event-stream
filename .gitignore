@@ -1,0 +1,12 @@
+# Rust build output
+/target/
+
+# Generated certificates (never commit private keys)
+/certs/
+
+# Environment variables file
+.env
+.env.local
+
+# macOS metadata
+.DS_Store

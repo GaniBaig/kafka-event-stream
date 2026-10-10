@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "kafka-rs"
+    static_configs:
+      # host.docker.internal resolves to your Mac's IP from inside Docker
+      # Port 9898 is where the cli binary's axum /metrics server will listen
+      - targets: ["host.docker.internal:9898"]

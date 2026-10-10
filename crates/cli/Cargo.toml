@@ -1,0 +1,22 @@
+[package]
+name = "cli"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "kafka-rs"
+path = "src/main.rs"
+
+[dependencies]
+proto         = { path = "../proto" }
+producer      = { path = "../producer" }
+consumer      = { path = "../consumer" }
+transactions  = { path = "../transactions" }
+observability = { path = "../observability" }
+tokio         = { workspace = true }
+tokio-util    = { version = "0.7" }
+tracing       = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+clap          = { version = "4", features = ["derive"] }
+anyhow        = { workspace = true }
+serde_json    = { workspace = true }

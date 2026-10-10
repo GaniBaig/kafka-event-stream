@@ -1,0 +1,13 @@
+[package]
+name = "consumer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+proto         = { path = "../proto" }
+rdkafka       = { version = "0.37", features = ["cmake-build"] }
+tokio         = { workspace = true }
+tokio-util    = { version = "0.7" }
+tracing       = { workspace = true }
+thiserror     = { workspace = true }
+observability = { path = "../observability" }
