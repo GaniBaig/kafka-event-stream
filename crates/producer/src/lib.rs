@@ -1,14 +1,18 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! # producer
+//!
+//! Kafka producer wrapping `rdkafka::producer::FutureProducer`.
+//!
+//! Demonstrates all three delivery semantics:
+//! - **At-most-once** — `acks=0`, no retries (fire-and-forget)
+//! - **At-least-once** — `acks=all`, `retries > 0` (may duplicate on retry)
+//! - **Exactly-once preparation** — `acks=all` + `enable.idempotence=true`
+//!   (dedup on single partition; full EOS requires the transactions crate)
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod config;
+mod error_conv;
+mod producer;
+mod security;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use config::{Acks, CompressionCodec, ProducerConfig, ProducerConfigBuilder, RecordMetadata};
+pub use producer::KafkaProducer;
+pub use security::apply_security_config;

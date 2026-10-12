@@ -1,14 +1,21 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! # observability
+//!
+//! Shared observability infrastructure:
+//! - `ObservabilityHooks` trait — the contract producer/consumer crates depend on
+//! - `MetricsRegistry` — Prometheus implementation of the trait
+//! - `start_metrics_server` — axum HTTP server serving `/metrics`
+//! - `init_tracing` — JSON structured logging setup
+//!
+//! Producer and consumer crates accept `Arc<dyn ObservabilityHooks + Send + Sync>`
+//! so they depend on the trait, never on the concrete Prometheus implementation.
+//! This is the `Arc<dyn Trait + Send + Sync>` pattern that demonstrates API design.
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub mod hooks;
+pub mod metrics;
+pub mod server;
+pub mod tracing_init;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use hooks::ObservabilityHooks;
+pub use metrics::MetricsRegistry;
+pub use server::start_metrics_server;
+pub use tracing_init::init_tracing;

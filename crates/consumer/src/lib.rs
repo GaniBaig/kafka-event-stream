@@ -1,14 +1,17 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! # consumer
+//!
+//! Kafka consumer wrapping `rdkafka::consumer::StreamConsumer`.
+//!
+//! Demonstrates:
+//! - Consumer group coordination (multiple consumers share partitions)
+//! - Manual offset commit — "commit after process" semantics (at-least-once)
+//! - `RebalanceListener` — logs partition assignments/revocations
+//! - `CancellationToken` — graceful shutdown via `tokio::select!`
+//! - Consumer lag tracking — `high_watermark - committed_offset` per partition
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod config;
+mod consumer;
+mod rebalance;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use config::{ConsumerConfig, OffsetReset};
+pub use consumer::KafkaConsumer;

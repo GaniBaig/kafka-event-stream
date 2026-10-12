@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_LOG: "info"
+
+jobs:
+
+  # ─── 1. Format check ──────────────────────────────────────────────────────
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  # ─── 2. Lint ──────────────────────────────────────────────────────────────
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - run: sudo apt-get install -y cmake
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  # ─── 3. Unit tests ────────────────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - run: sudo apt-get install -y cmake
+      # Unit tests only — integration tests are tagged #[ignore] and run separately
+      - run: cargo test --workspace
+
+  # ─── 4. Integration tests (requires Kafka) ────────────────────────────────
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - run: sudo apt-get install -y cmake
+      - name: Start Kafka via Docker Compose
+        run: docker compose -f docker/docker-compose.yml up -d
+      - name: Wait for Kafka to be ready (max 60s)
+        run: |
+          for i in $(seq 1 30); do
+            if docker exec kafka kafka-broker-api-versions \
+                --bootstrap-server localhost:9092 >/dev/null 2>&1; then
+              echo "Kafka is ready"
+              exit 0
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+          echo "Kafka did not become ready in time" && exit 1
+      - name: Run integration tests
+        run: cargo test --workspace -- --ignored
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker/docker-compose.yml down
+
+  # ─── 5. Security audit ────────────────────────────────────────────────────
+  audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo install cargo-audit --locked
+      # Deny High (CVSS >= 7.0) and Critical (CVSS >= 9.0) per IBM security policy
+      - run: cargo audit --deny warnings
